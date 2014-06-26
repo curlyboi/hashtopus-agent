@@ -34,7 +34,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-    <StartupObject>hashtopus.Program</StartupObject>
+    <StartupObject>hashtopus.hashtopus</StartupObject>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationIcon>octoicon.ico</ApplicationIcon>
@@ -49,7 +49,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Program.cs" />
+    <Compile Include="hashtopus.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="octoicon.ico" />

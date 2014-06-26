@@ -26,7 +26,7 @@ struct LASTINPUTINFO
 
 namespace hashtopus
 {
-    class Program
+    class hashtopus
     {
 
         [DllImport("user32.dll")]
@@ -39,7 +39,7 @@ namespace hashtopus
 
         public static bool debug = false;
 
-        public static string htpver = "0.8.7";
+        public static string htpver = "0.8.8";
         public static char separator = '\x01';
         public static string goodExe = "hashtopus.exe";
         public static string updateExe = "hashtopupd.exe";
@@ -195,6 +195,9 @@ namespace hashtopus
                     // repeat if it failed
                     Thread.Sleep(sleepTime);
                 }
+
+                // auto-accept the eula
+                acceptEula();
 
                 // wait for unfinished requests
                 waitForThreads();
@@ -910,26 +913,31 @@ namespace hashtopus
                     Process.Start("chmod", "+x \"" + szexe + "\"");
                 }
             }
+            
             // prepare launching process
             Process unpak = new Process();
             unpak.StartInfo.FileName = szexe;
             unpak.StartInfo.WorkingDirectory = installPath;
             unpak.StartInfo.Arguments = " x -y -o\"" + outdir + "\" \"" + szarchive + "\"";
             if (files != "") unpak.StartInfo.Arguments += " " + files;
-
-            if (debug)
-            {
-                Console.WriteLine(unpak.StartInfo.FileName + " " + unpak.StartInfo.Arguments);
-            }
             
             unpak.StartInfo.UseShellExecute = false;
-            // unpack the archive
             Console.WriteLine("Extracting archive " + szarchive + "...");
+
+            // unpack the archive
             if (debug)
             {
                 Console.WriteLine(unpak.StartInfo.FileName + " " + unpak.StartInfo.Arguments);
             }
-            if (!unpak.Start()) return false;
+            try
+            {
+                if (!unpak.Start()) return false;
+            }
+            catch
+            {
+                Console.WriteLine("Could not start 7zr.");
+                return false;
+            }
             unpak.WaitForExit();
             return true;
         }
@@ -1035,8 +1043,6 @@ namespace hashtopus
                         if (os == 1) Process.Start("chmod", "+x \"" + cmdExecutable + "\"");
                     }
 
-                    // auto-accept the eula
-                    acceptEula();
                     break;
 
                 case "down_nok":
@@ -1304,7 +1310,7 @@ namespace hashtopus
             }
             while (wcli.IsBusy) Thread.Sleep(100);
             Console.WriteLine();
-            return true;
+            return File.Exists(local);
         }
 
         public static void waitForIdle()
