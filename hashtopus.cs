@@ -39,7 +39,7 @@ namespace hashtopus
 
         public static bool debug = false;
 
-        public static string htpver = "0.8.8";
+        public static string htpver = "0.8.8a";
         public static char separator = '\x01';
         public static string goodExe = "hashtopus.exe";
         public static string updateExe = "hashtopupd.exe";
@@ -918,10 +918,10 @@ namespace hashtopus
             Process unpak = new Process();
             unpak.StartInfo.FileName = szexe;
             unpak.StartInfo.WorkingDirectory = installPath;
-            unpak.StartInfo.Arguments = " x -y -o\"" + outdir + "\" \"" + szarchive + "\"";
+            unpak.StartInfo.Arguments = "x -y -o\"" + outdir + "\" \"" + szarchive + "\"";
             if (files != "") unpak.StartInfo.Arguments += " " + files;
             
-            unpak.StartInfo.UseShellExecute = false;
+            //unpak.StartInfo.UseShellExecute = false;
             Console.WriteLine("Extracting archive " + szarchive + "...");
 
             // unpack the archive
