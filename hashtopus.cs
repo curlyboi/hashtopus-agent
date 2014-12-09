@@ -39,7 +39,7 @@ namespace hashtopus
 
         public static bool debug = false;
 
-        public static string htpver = "0.8.8a";
+        public static string htpver = "0.9.0";
         public static char separator = '\x01';
         public static string goodExe = "hashtopus.exe";
         public static string updateExe = "hashtopupd.exe";
@@ -115,6 +115,17 @@ namespace hashtopus
         public static int progresHelper = 0;
 
 
+        public static void debugOutput(string toPrint, ConsoleColor printColor = ConsoleColor.Magenta)
+        {
+            if (debug)
+            {
+                ConsoleColor originalColor = Console.ForegroundColor;
+                Console.ForegroundColor = printColor;
+                Console.WriteLine(toPrint);
+                Console.ForegroundColor = originalColor;
+            }
+        }
+        
         public static void webError(WebException e)
         {
             // just printout http error
@@ -352,6 +363,7 @@ namespace hashtopus
             // detect OS
             if (os == 1)
             {
+                // unix
                 // load GPUs
                 ProcessStartInfo pinfo = new ProcessStartInfo();
                 pinfo.FileName = "lspci";
@@ -359,10 +371,7 @@ namespace hashtopus
                 pinfo.RedirectStandardOutput = true;
                 Process lspci = new Process();
                 lspci.StartInfo = pinfo;
-                if (debug)
-                {
-                    Console.WriteLine(pinfo.FileName + " " + pinfo.Arguments);
-                }
+                debugOutput(pinfo.FileName + " " + pinfo.Arguments);
                 lspci.Start();
                 while (!lspci.HasExited)
                 {
@@ -386,10 +395,7 @@ namespace hashtopus
                 pinfo.RedirectStandardOutput = true;
                 Process uname = new Process();
                 uname.StartInfo = pinfo;
-                if (debug)
-                {
-                    Console.WriteLine(pinfo.FileName + " " + pinfo.Arguments);
-                }
+                debugOutput(pinfo.FileName + " " + pinfo.Arguments);
                 uname.Start();
                 while (!uname.HasExited)
                 {
@@ -436,10 +442,8 @@ namespace hashtopus
                         pinfo.RedirectStandardOutput = true;
                         Process blkid = new Process();
                         blkid.StartInfo = pinfo;
-                        if (debug)
-                        {
-                            Console.WriteLine(pinfo.FileName + " " + pinfo.Arguments);
-                        }
+                        debugOutput(pinfo.FileName + " " + pinfo.Arguments);
+                        
                         blkid.Start();
                         while (!blkid.HasExited)
                         {
@@ -458,14 +462,16 @@ namespace hashtopus
                         }
                     }
                 }
-                if (uid == null)
+                if (uid == null || uid == "")
                 {
+                    // somehow we didn't get a UID, let's just randomly generate one
                     uid = "BADID_" + new Random().Next(999999).ToString();
                 }
 
             }
             else
             {
+                // windows
                 // load GPUs into list
                 ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT Description FROM Win32_VideoController");
                 foreach (ManagementObject mo in searcher.Get())
@@ -925,10 +931,8 @@ namespace hashtopus
             Console.WriteLine("Extracting archive " + szarchive + "...");
 
             // unpack the archive
-            if (debug)
-            {
-                Console.WriteLine(unpak.StartInfo.FileName + " " + unpak.StartInfo.Arguments);
-            }
+            debugOutput(unpak.StartInfo.FileName + " " + unpak.StartInfo.Arguments);
+            
             try
             {
                 if (!unpak.Start()) return false;
@@ -1417,10 +1421,8 @@ namespace hashtopus
             pinfo.FileName = cmdExecutable;
             pinfo.Arguments = cmdLine + " --session=hashtopus --keyspace --quiet";
 
-            if (debug)
-            {
-                Console.WriteLine(pinfo.FileName + " " + pinfo.Arguments);
-            }
+            debugOutput(pinfo.FileName + " " + pinfo.Arguments);
+            
             
             // prepare the process
             pinfo.WorkingDirectory = tasksDir;
@@ -1441,7 +1443,7 @@ namespace hashtopus
                 while (!hashcatProcess.StandardOutput.EndOfStream)
                 {
                     string vystup = hashcatProcess.StandardOutput.ReadLine();
-                    if (debug) Console.WriteLine("O>>" + vystup);
+                    debugOutput(vystup);
                     if (long.TryParse(vystup, out ksHelper) && ksHelper > 0)
                     {
                         // grab the progress value and return it
@@ -1509,10 +1511,8 @@ namespace hashtopus
             pinfo.FileName = cmdExecutable;
             pinfo.Arguments = cmdLine + " --runtime=" + benchTime + " --separator=" + separator + " --outfile=bench" + task + ".tmp --restore-disable --potfile-disable --status-automat --session=hashtopus";
 
-            if (debug)
-            {
-                Console.WriteLine(pinfo.FileName + " " + pinfo.Arguments);
-            }
+            debugOutput(pinfo.FileName + " " + pinfo.Arguments);
+            
             
             // prepare process
             pinfo.WorkingDirectory = tasksDir;
@@ -1531,7 +1531,7 @@ namespace hashtopus
                 while (!hashcatProcess.StandardOutput.EndOfStream)
                 {
                     string vystup = hashcatProcess.StandardOutput.ReadLine();
-                    if (debug) Console.WriteLine("O>>" + vystup);
+                    debugOutput(vystup);
                     if (vystup.Contains("STATUS\t"))
                     {
                         // grab the progress value and return it
@@ -1616,10 +1616,8 @@ namespace hashtopus
             // construct the command line from parameters
             pinfo.Arguments = cmdLine + " --potfile-disable --quiet --restore-disable --session=hashtopus --status --status-automat --status-timer=" + statusInterval + " --outfile-check-dir=\"" + zapDir + "\" --outfile-check-timer=" + statusInterval + " --remove --remove-timer=" + statusInterval + " --separator=" + separator + " --skip=" + chunkStart + " --limit=" + chunkSize;
 
-            if (debug)
-            {
-                Console.WriteLine(pinfo.FileName + " " + pinfo.Arguments);
-            }
+            debugOutput(pinfo.FileName + " " + pinfo.Arguments);
+            
             
             pinfo.WorkingDirectory = tasksDir;
             pinfo.UseShellExecute = false;
@@ -1642,7 +1640,7 @@ namespace hashtopus
         {
             // callback for stdout
             if (co != null) {
-                if (debug) Console.WriteLine("O>>" + co);
+                debugOutput(co);
                 int poz = co.LastIndexOf(separator);
                 if (poz == -1)
                 {
@@ -1734,7 +1732,7 @@ namespace hashtopus
                 if (co != "")
                 {
                     // if the line is not empty then add it to the error output
-                    if (debug) Console.WriteLine("E>>" + co);
+                    debugOutput(co,ConsoleColor.Red);
                     errOutput.AppendLine(co);
                     Console.WriteLine("Hashcat process error: " + co);
                 }
