@@ -39,7 +39,7 @@ namespace hashtopus
 
         public static bool debug = false;
 
-        public static string htpver = "0.9.0";
+        public static string htpver = "0.9.1";
         public static char separator = '\x01';
         public static string goodExe = "hashtopus.exe";
         public static string updateExe = "hashtopupd.exe";
@@ -115,9 +115,9 @@ namespace hashtopus
         public static int progresHelper = 0;
 
 
-        public static void debugOutput(string toPrint, ConsoleColor printColor = ConsoleColor.Magenta)
+        public static void debugOutput(string toPrint, bool debugFlag, ConsoleColor printColor = ConsoleColor.Magenta)
         {
-            if (debug)
+            if (debugFlag)
             {
                 ConsoleColor originalColor = Console.ForegroundColor;
                 Console.ForegroundColor = printColor;
@@ -129,7 +129,8 @@ namespace hashtopus
         public static void webError(WebException e)
         {
             // just printout http error
-            Console.WriteLine("HTTP error: " + e.Message);
+
+            debugOutput("HTTP error: " + e.Message, true);
         }
 
         static void Main(string[] args)
@@ -371,7 +372,7 @@ namespace hashtopus
                 pinfo.RedirectStandardOutput = true;
                 Process lspci = new Process();
                 lspci.StartInfo = pinfo;
-                debugOutput(pinfo.FileName + " " + pinfo.Arguments);
+                debugOutput(pinfo.FileName + " " + pinfo.Arguments, debug);
                 lspci.Start();
                 while (!lspci.HasExited)
                 {
@@ -395,7 +396,7 @@ namespace hashtopus
                 pinfo.RedirectStandardOutput = true;
                 Process uname = new Process();
                 uname.StartInfo = pinfo;
-                debugOutput(pinfo.FileName + " " + pinfo.Arguments);
+                debugOutput(pinfo.FileName + " " + pinfo.Arguments, debug);
                 uname.Start();
                 while (!uname.HasExited)
                 {
@@ -442,7 +443,7 @@ namespace hashtopus
                         pinfo.RedirectStandardOutput = true;
                         Process blkid = new Process();
                         blkid.StartInfo = pinfo;
-                        debugOutput(pinfo.FileName + " " + pinfo.Arguments);
+                        debugOutput(pinfo.FileName + " " + pinfo.Arguments, debug);
                         
                         blkid.Start();
                         while (!blkid.HasExited)
@@ -931,7 +932,7 @@ namespace hashtopus
             Console.WriteLine("Extracting archive " + szarchive + "...");
 
             // unpack the archive
-            debugOutput(unpak.StartInfo.FileName + " " + unpak.StartInfo.Arguments);
+            debugOutput(unpak.StartInfo.FileName + " " + unpak.StartInfo.Arguments, debug);
             
             try
             {
@@ -1421,7 +1422,7 @@ namespace hashtopus
             pinfo.FileName = cmdExecutable;
             pinfo.Arguments = cmdLine + " --session=hashtopus --keyspace --quiet";
 
-            debugOutput(pinfo.FileName + " " + pinfo.Arguments);
+            debugOutput(pinfo.FileName + " " + pinfo.Arguments, debug);
             
             
             // prepare the process
@@ -1443,7 +1444,7 @@ namespace hashtopus
                 while (!hashcatProcess.StandardOutput.EndOfStream)
                 {
                     string vystup = hashcatProcess.StandardOutput.ReadLine();
-                    debugOutput(vystup);
+                    debugOutput(vystup, debug);
                     if (long.TryParse(vystup, out ksHelper) && ksHelper > 0)
                     {
                         // grab the progress value and return it
@@ -1511,7 +1512,7 @@ namespace hashtopus
             pinfo.FileName = cmdExecutable;
             pinfo.Arguments = cmdLine + " --runtime=" + benchTime + " --separator=" + separator + " --outfile=bench" + task + ".tmp --restore-disable --potfile-disable --status-automat --session=hashtopus";
 
-            debugOutput(pinfo.FileName + " " + pinfo.Arguments);
+            debugOutput(pinfo.FileName + " " + pinfo.Arguments, debug);
             
             
             // prepare process
@@ -1531,7 +1532,7 @@ namespace hashtopus
                 while (!hashcatProcess.StandardOutput.EndOfStream)
                 {
                     string vystup = hashcatProcess.StandardOutput.ReadLine();
-                    debugOutput(vystup);
+                    debugOutput(vystup, debug);
                     if (vystup.Contains("STATUS\t"))
                     {
                         // grab the progress value and return it
@@ -1616,7 +1617,7 @@ namespace hashtopus
             // construct the command line from parameters
             pinfo.Arguments = cmdLine + " --potfile-disable --quiet --restore-disable --session=hashtopus --status --status-automat --status-timer=" + statusInterval + " --outfile-check-dir=\"" + zapDir + "\" --outfile-check-timer=" + statusInterval + " --remove --remove-timer=" + statusInterval + " --separator=" + separator + " --skip=" + chunkStart + " --limit=" + chunkSize;
 
-            debugOutput(pinfo.FileName + " " + pinfo.Arguments);
+            debugOutput(pinfo.FileName + " " + pinfo.Arguments, debug);
             
             
             pinfo.WorkingDirectory = tasksDir;
@@ -1640,7 +1641,7 @@ namespace hashtopus
         {
             // callback for stdout
             if (co != null) {
-                debugOutput(co);
+                debugOutput(co, debug);
                 int poz = co.LastIndexOf(separator);
                 if (poz == -1)
                 {
@@ -1732,9 +1733,8 @@ namespace hashtopus
                 if (co != "")
                 {
                     // if the line is not empty then add it to the error output
-                    debugOutput(co,ConsoleColor.Red);
+                    debugOutput(co, true, ConsoleColor.Red);
                     errOutput.AppendLine(co);
-                    Console.WriteLine("Hashcat process error: " + co);
                 }
             }
         }
