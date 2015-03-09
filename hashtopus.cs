@@ -39,7 +39,7 @@ namespace hashtopus
 
         public static bool debug = false;
 
-        public static string htpver = "0.9.1";
+        public static string htpver = "0.9.3";
         public static char separator = '\x01';
         public static string goodExe = "hashtopus.exe";
         public static string updateExe = "hashtopupd.exe";
@@ -756,10 +756,15 @@ namespace hashtopus
                                 {
                                     // the value was found somewhere so in klicGpu we now have
                                     // the key which contains the desired value
-                                    string[] hodnota = klicGpu.GetValue(valueToFind).ToString().Split('.');
-                                    long justFound = long.Parse(hodnota[0]) * 100 + long.Parse(hodnota[1]);
-                                    // and seek for the highest possible value if there are more
-                                    if (justFound > greatestFound) greatestFound = justFound;
+                                    string reg_hodnota = klicGpu.GetValue(valueToFind).ToString();
+                                    if (reg_hodnota.Contains("."))
+                                    {
+                                        // check at least marginaly for correct format (trying to blind-fix bug #2)
+                                        string[] hodnota = reg_hodnota.Split('.');
+                                        long justFound = long.Parse(hodnota[0]) * 100 + long.Parse(hodnota[1]);
+                                        // and seek for the highest possible value if there are more
+                                        if (justFound > greatestFound) greatestFound = justFound;
+                                    }
                                 }
                             }
                         }
