@@ -39,7 +39,7 @@ namespace hashtopus
 
         public static bool debug = false;
 
-        public static string htpver = "0.9.3";
+        public static string htpver = "0.9.4";
         public static char separator = '\x01';
         public static string goodExe = "hashtopus.exe";
         public static string updateExe = "hashtopupd.exe";
@@ -620,11 +620,13 @@ namespace hashtopus
             
             if (os == 1)
             {
+                debugOutput("Linux OS detected.", debug);
                 // linux branch
                 switch (gpubrand)
                 {
                     case "1":
                         // nvidia detect
+                       debugOutput("NVidia detected.", debug);
                         string nvver = "/proc/driver/nvidia/version";
                         if (File.Exists(nvver))
                         {
@@ -635,6 +637,7 @@ namespace hashtopus
                                 {
                                     // this is the line we want
                                     // overloaded split by string (woooo nice hax :D)
+                                    debugOutput("Parsing driver version from '" + verline + "'", debug);
                                     string[] pole = verline.Split(new string[] { "  " }, StringSplitOptions.None);
                                     curVer = long.Parse(pole[1].Replace(".", ""));
                                 }
@@ -654,7 +657,7 @@ namespace hashtopus
 
                     case "2":
                         // amd, read text file or assume 9999
-
+                        debugOutput("AMD detected.", debug);
                         if (File.Exists("catalyst_ver.txt"))
                         {
                             curVer = long.Parse(File.ReadAllText("catalyst_ver.txt").Trim());
@@ -672,10 +675,12 @@ namespace hashtopus
             else
             {
                 // windows version
+                debugOutput("Windows OS detected.", debug);
                 List<string> dlltocheck = new List<string>();
                 switch (gpubrand)
                 {
                     case "1":
+                        debugOutput("NVidia detected.", debug);
                         if (cpu == "32")
                         {
                             dlltocheck.Add("nvapi.dll");
@@ -697,6 +702,7 @@ namespace hashtopus
                         break;
 
                     case "2":
+                        debugOutput("AMD detected.", debug);
                         if (cpu == "32")
                         {
                             dlltocheck.Add("atiadlxy.dll");
@@ -757,10 +763,12 @@ namespace hashtopus
                                     // the value was found somewhere so in klicGpu we now have
                                     // the key which contains the desired value
                                     string reg_hodnota = klicGpu.GetValue(valueToFind).ToString();
+                                    debugOutput("Parsing driver version from '" + reg_hodnota + "'", debug);
                                     if (reg_hodnota.Contains("."))
                                     {
                                         // check at least marginaly for correct format (trying to blind-fix bug #2)
                                         string[] hodnota = reg_hodnota.Split('.');
+                                        debugOutput("Parsing driver version...", debug);
                                         long justFound = long.Parse(hodnota[0]) * 100 + long.Parse(hodnota[1]);
                                         // and seek for the highest possible value if there are more
                                         if (justFound > greatestFound) greatestFound = justFound;
