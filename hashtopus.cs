@@ -39,7 +39,7 @@ namespace hashtopus
 
         public static bool debug = false;
 
-        public static string htpver = "0.9.4";
+        public static string htpver = "0.9.5";
         public static char separator = '\x01';
         public static string goodExe = "hashtopus.exe";
         public static string updateExe = "hashtopupd.exe";
@@ -767,8 +767,9 @@ namespace hashtopus
                                     if (reg_hodnota.Contains("."))
                                     {
                                         // check at least marginaly for correct format (trying to blind-fix bug #2)
+                                        // and try to cut anything after space (trying to blind-fix bug #11 :DD)
+                                        if (reg_hodnota.Contains(" ")) reg_hodnota = reg_hodnota.Substring(0, reg_hodnota.IndexOf(" "));
                                         string[] hodnota = reg_hodnota.Split('.');
-                                        debugOutput("Parsing driver version...", debug);
                                         long justFound = long.Parse(hodnota[0]) * 100 + long.Parse(hodnota[1]);
                                         // and seek for the highest possible value if there are more
                                         if (justFound > greatestFound) greatestFound = justFound;
