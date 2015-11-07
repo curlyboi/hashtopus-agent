@@ -39,7 +39,7 @@ namespace hashtopus
 
         public static bool debug = false;
 
-        public static string htpver = "0.9.7";
+        public static string htpver = "0.9.8";
         public static char separator = '\x01';
         public static string goodExe = "hashtopus.exe";
         public static string updateExe = "hashtopupd.exe";
@@ -656,7 +656,7 @@ namespace hashtopus
                         break;
 
                     case "2":
-                        // amd, read text file or assume 9999
+                        // amd, read text file or assume 0
                         debugOutput("AMD detected.", debug);
                         if (File.Exists("catalyst_ver.txt"))
                         {
@@ -703,86 +703,95 @@ namespace hashtopus
 
                     case "2":
                         debugOutput("AMD detected.", debug);
-                        if (cpu == "32")
+                        if (File.Exists("catalyst_ver.txt"))
                         {
-                            dlltocheck.Add("atiadlxy.dll");
-                        }
-                        else if (cpu == "64")
-                        {
-                            dlltocheck.Add("atiadlxx.dll");
-                        }
-                        dlltocheck.Add("OpenCL.dll");
-                        if (!versionDetectDLLs(dlltocheck))
-                        {
-                            Console.WriteLine("Please (re)install AMD Catalyst.");
-                            return false;
-                        }
-
-                        // determine version from registry key
-                        RegistryKey klic = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Class\{4D36E968-E325-11CE-BFC1-08002BE10318}", false);
-                        string valueToFind = "Catalyst_Version";
-                        long greatestFound = 0;
-                        if (klic == null)
-                        {
-                            Console.WriteLine("Could not access GPU registry key.");
-                            return false;
+                            // manual override
+                            curVer = long.Parse(File.ReadAllText("catalyst_ver.txt").Trim());
                         }
                         else
                         {
-                            // list all subkeys (e.g. graphic cards entries 0000, 0001 and so on)
-                            foreach (string grafika in klic.GetSubKeyNames())
+                            // detect amd driver version
+                            if (cpu == "32")
                             {
-                                bool valueExists = false;
-                                RegistryKey klicGpu = null;
-                                try
+                                dlltocheck.Add("atiadlxy.dll");
+                            }
+                            else if (cpu == "64")
+                            {
+                                dlltocheck.Add("atiadlxx.dll");
+                            }
+                            dlltocheck.Add("OpenCL.dll");
+                            if (!versionDetectDLLs(dlltocheck))
+                            {
+                                Console.WriteLine("Please (re)install AMD Catalyst.");
+                                return false;
+                            }
+
+                            // determine version from registry key
+                            RegistryKey klic = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Class\{4D36E968-E325-11CE-BFC1-08002BE10318}", false);
+                            string valueToFind = "Catalyst_Version";
+                            long greatestFound = 0;
+                            if (klic == null)
+                            {
+                                Console.WriteLine("Could not access GPU registry key.");
+                                return false;
+                            }
+                            else
+                            {
+                                // list all subkeys (e.g. graphic cards entries 0000, 0001 and so on)
+                                foreach (string grafika in klic.GetSubKeyNames())
                                 {
-                                    klicGpu = klic.OpenSubKey(grafika, false);
-                                }
-                                catch
-                                {
-                                    // do nothing - this is here because Properties subkey can't be readed
-                                    // and would throw up expections all over us
-                                }
-                                if (klicGpu == null) continue;
-                                if (Array.IndexOf(klicGpu.GetValueNames(), valueToFind) == -1)
-                                {
-                                    // the desired entry is not found, try the Settings subkey
-                                    klicGpu = klicGpu.OpenSubKey("Settings", false);
-                                    if (Array.IndexOf(klicGpu.GetValueNames(), valueToFind) != -1)
+                                    bool valueExists = false;
+                                    RegistryKey klicGpu = null;
+                                    try
+                                    {
+                                        klicGpu = klic.OpenSubKey(grafika, false);
+                                    }
+                                    catch
+                                    {
+                                        // do nothing - this is here because Properties subkey can't be readed
+                                        // and would throw up expections all over us
+                                    }
+                                    if (klicGpu == null) continue;
+                                    if (Array.IndexOf(klicGpu.GetValueNames(), valueToFind) == -1)
+                                    {
+                                        // the desired entry is not found, try the Settings subkey
+                                        klicGpu = klicGpu.OpenSubKey("Settings", false);
+                                        if (Array.IndexOf(klicGpu.GetValueNames(), valueToFind) != -1)
+                                        {
+                                            valueExists = true;
+                                        }
+                                    }
+                                    else
                                     {
                                         valueExists = true;
                                     }
-                                }
-                                else
-                                {
-                                    valueExists = true;
-                                }
 
-                                if (valueExists == true)
-                                {
-                                    // the value was found somewhere so in klicGpu we now have
-                                    // the key which contains the desired value
-                                    string reg_hodnota = klicGpu.GetValue(valueToFind).ToString();
-                                    debugOutput("Parsing driver version from '" + reg_hodnota + "'", debug);
-                                    if (reg_hodnota.Contains("."))
+                                    if (valueExists == true)
                                     {
-                                        // check at least marginaly for correct format (trying to blind-fix bug #2)
-                                        // and try to cut anything after space (trying to blind-fix bug #11 :DD)
-                                        if (reg_hodnota.Contains(" ")) reg_hodnota = reg_hodnota.Substring(0, reg_hodnota.IndexOf(" "));
-                                        string[] hodnota = reg_hodnota.Split('.');
-                                        long justFound = long.Parse(hodnota[0]) * 100 + long.Parse(hodnota[1]);
-                                        // and seek for the highest possible value if there are more
-                                        if (justFound > greatestFound) greatestFound = justFound;
+                                        // the value was found somewhere so in klicGpu we now have
+                                        // the key which contains the desired value
+                                        string reg_hodnota = klicGpu.GetValue(valueToFind).ToString();
+                                        debugOutput("Parsing driver version from '" + reg_hodnota + "'", debug);
+                                        if (reg_hodnota.Contains("."))
+                                        {
+                                            // check at least marginaly for correct format (trying to blind-fix bug #2)
+                                            // and try to cut anything after space (trying to blind-fix bug #11 :DD)
+                                            if (reg_hodnota.Contains(" ")) reg_hodnota = reg_hodnota.Substring(0, reg_hodnota.IndexOf(" "));
+                                            string[] hodnota = reg_hodnota.Split('.');
+                                            long justFound = long.Parse(hodnota[0]) * 100 + long.Parse(hodnota[1]);
+                                            // and seek for the highest possible value if there are more
+                                            if (justFound > greatestFound) greatestFound = justFound;
+                                        }
                                     }
                                 }
                             }
+                            if (greatestFound == 0)
+                            {
+                                Console.WriteLine("Could not detect AMD Catalyst version.");
+                                return false;
+                            }
+                            curVer = greatestFound;
                         }
-                        if (greatestFound == 0)
-                        {
-                            Console.WriteLine("Could not detect AMD Catalyst version.");
-                            return false;
-                        }
-                        curVer = greatestFound;
                         break;
                 }
             }
