@@ -31,15 +31,10 @@ namespace hashtopus
 
         [DllImport("user32.dll")]
         public static extern bool GetLastInputInfo(ref LASTINPUTINFO plii);
-        [DllImport("kernel32.dll")]
-        public static extern IntPtr LoadLibrary(string dllToLoad);
-        [DllImport("kernel32.dll", SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        static extern bool FreeLibrary(IntPtr hModule);
 
         public static bool debug = false;
 
-        public static string htpver = "0.9.8";
+        public static string htpver = "1.0";
         public static char separator = '\x01';
         public static string goodExe = "hashtopus.exe";
         public static string updateExe = "hashtopupd.exe";
@@ -67,8 +62,6 @@ namespace hashtopus
         public static string uid;
         public static string machineName;
         public static string gpus;
-        public static string gpubrand;
-        public static long curVer;
 
         public static string token;
         public static string tokenName = "hashtopus.token";
@@ -193,13 +186,6 @@ namespace hashtopus
             {
                 // self update hashtopus
                 selfUpdate();
-
-                // determine gpu driver version
-                while (!versionDetect())
-                {
-                    // repeat untill if passes
-                    Thread.Sleep(sleepTime);
-                }
 
                 // update hashcat if needed
                 while (!downloadHashcat())
@@ -558,8 +544,7 @@ namespace hashtopus
                 switch (responze[0])
                 {
                     case "log_ok":
-                        gpubrand = responze[1];
-                        int newSleepTime = int.Parse(responze[2]) * 1000;
+                        int newSleepTime = int.Parse(responze[1]) * 1000;
                         if (newSleepTime > 0) sleepTime = newSleepTime;
                         Console.WriteLine("OK.");
                         return true;
@@ -611,207 +596,6 @@ namespace hashtopus
         {
             // write the token to disk
             File.WriteAllText(tokenFile, token);
-            return true;
-        }
-
-        public static bool versionDetect()
-        {
-            // check if gpu driver has sufficient version
-            
-            if (os == 1)
-            {
-                debugOutput("Linux OS detected.", debug);
-                // linux branch
-                switch (gpubrand)
-                {
-                    case "1":
-                        // nvidia detect
-                       debugOutput("NVidia detected.", debug);
-                        string nvver = "/proc/driver/nvidia/version";
-                        if (File.Exists(nvver))
-                        {
-                            string[] verze = File.ReadAllText(nvver).Split('\n');
-                            foreach (string verline in verze)
-                            {
-                                if ((verline.Length >= 4) && (verline.Substring(0, 4) == "NVRM"))
-                                {
-                                    // this is the line we want
-                                    // overloaded split by string (woooo nice hax :D)
-                                    debugOutput("Parsing driver version from '" + verline + "'", debug);
-                                    string[] pole = verline.Split(new string[] { "  " }, StringSplitOptions.None);
-                                    curVer = long.Parse(pole[1].Replace(".", ""));
-                                }
-                            }
-                            if (curVer == 0)
-                            {
-                                Console.WriteLine("Could not obtain NVidia driver version.");
-                                return false;
-                            }
-                        }
-                        else
-                        {
-                            Console.WriteLine("Please (re)install NVidia drivers.");
-                            return false;
-                        }
-                        break;
-
-                    case "2":
-                        // amd, read text file or assume 0
-                        debugOutput("AMD detected.", debug);
-                        if (File.Exists("catalyst_ver.txt"))
-                        {
-                            curVer = long.Parse(File.ReadAllText("catalyst_ver.txt").Trim());
-                        }
-                        else
-                        {
-                            // there is no reliable way to find out catalyst version from linux system
-                            // we need user assistance
-                            Console.WriteLine("Please create file 'catalyst_ver.txt' in Hashtopus directory containing installed Catalyst version in raw number format (i.e. 1312, 1403, etc.)");
-                            curVer = 0;
-                        }
-                        break;
-                }
-            }
-            else
-            {
-                // windows version
-                debugOutput("Windows OS detected.", debug);
-                List<string> dlltocheck = new List<string>();
-                switch (gpubrand)
-                {
-                    case "1":
-                        debugOutput("NVidia detected.", debug);
-                        if (cpu == "32")
-                        {
-                            dlltocheck.Add("nvapi.dll");
-                        }
-                        else if (cpu == "64")
-                        {
-                            dlltocheck.Add("nvapi64.dll");
-                        }
-                        dlltocheck.Add("nvcuda.dll");
-                        if (!versionDetectDLLs(dlltocheck))
-                        {
-                            Console.WriteLine("Please (re)install NVidia drivers.");
-                            return false;
-                        }
-
-                        // detect version of nvidia DLL
-                        FileVersionInfo finfo = FileVersionInfo.GetVersionInfo(Path.Combine(Environment.SystemDirectory, dlltocheck[0]));
-                        curVer = ((finfo.ProductBuildPart - 10) * 10000) + finfo.ProductPrivatePart;
-                        break;
-
-                    case "2":
-                        debugOutput("AMD detected.", debug);
-                        if (File.Exists("catalyst_ver.txt"))
-                        {
-                            // manual override
-                            curVer = long.Parse(File.ReadAllText("catalyst_ver.txt").Trim());
-                        }
-                        else
-                        {
-                            // detect amd driver version
-                            if (cpu == "32")
-                            {
-                                dlltocheck.Add("atiadlxy.dll");
-                            }
-                            else if (cpu == "64")
-                            {
-                                dlltocheck.Add("atiadlxx.dll");
-                            }
-                            dlltocheck.Add("OpenCL.dll");
-                            if (!versionDetectDLLs(dlltocheck))
-                            {
-                                Console.WriteLine("Please (re)install AMD Catalyst.");
-                                return false;
-                            }
-
-                            // determine version from registry key
-                            RegistryKey klic = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Class\{4D36E968-E325-11CE-BFC1-08002BE10318}", false);
-                            string valueToFind = "Catalyst_Version";
-                            long greatestFound = 0;
-                            if (klic == null)
-                            {
-                                Console.WriteLine("Could not access GPU registry key.");
-                                return false;
-                            }
-                            else
-                            {
-                                // list all subkeys (e.g. graphic cards entries 0000, 0001 and so on)
-                                foreach (string grafika in klic.GetSubKeyNames())
-                                {
-                                    bool valueExists = false;
-                                    RegistryKey klicGpu = null;
-                                    try
-                                    {
-                                        klicGpu = klic.OpenSubKey(grafika, false);
-                                    }
-                                    catch
-                                    {
-                                        // do nothing - this is here because Properties subkey can't be readed
-                                        // and would throw up expections all over us
-                                    }
-                                    if (klicGpu == null) continue;
-                                    if (Array.IndexOf(klicGpu.GetValueNames(), valueToFind) == -1)
-                                    {
-                                        // the desired entry is not found, try the Settings subkey
-                                        klicGpu = klicGpu.OpenSubKey("Settings", false);
-                                        if (Array.IndexOf(klicGpu.GetValueNames(), valueToFind) != -1)
-                                        {
-                                            valueExists = true;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        valueExists = true;
-                                    }
-
-                                    if (valueExists == true)
-                                    {
-                                        // the value was found somewhere so in klicGpu we now have
-                                        // the key which contains the desired value
-                                        string reg_hodnota = klicGpu.GetValue(valueToFind).ToString();
-                                        debugOutput("Parsing driver version from '" + reg_hodnota + "'", debug);
-                                        if (reg_hodnota.Contains("."))
-                                        {
-                                            // check at least marginaly for correct format (trying to blind-fix bug #2)
-                                            // and try to cut anything after space (trying to blind-fix bug #11 :DD)
-                                            if (reg_hodnota.Contains(" ")) reg_hodnota = reg_hodnota.Substring(0, reg_hodnota.IndexOf(" "));
-                                            string[] hodnota = reg_hodnota.Split('.');
-                                            long justFound = long.Parse(hodnota[0]) * 100 + long.Parse(hodnota[1]);
-                                            // and seek for the highest possible value if there are more
-                                            if (justFound > greatestFound) greatestFound = justFound;
-                                        }
-                                    }
-                                }
-                            }
-                            if (greatestFound == 0)
-                            {
-                                Console.WriteLine("Could not detect AMD Catalyst version.");
-                                return false;
-                            }
-                            curVer = greatestFound;
-                        }
-                        break;
-                }
-            }
-            return true;
-        }
-
-        public static bool versionDetectDLLs(List<string> dllToCheck)
-        {
-            // try to load every single DLL in the list and return false if any of them fails
-            foreach (string dllko in dllToCheck)
-            {
-                IntPtr libPoint = LoadLibrary(dllko);
-                if (libPoint == IntPtr.Zero)
-                {
-                    Console.WriteLine("Library " + dllko + " not found!");
-                    return false;
-                }
-                FreeLibrary(libPoint);
-                FreeLibrary(libPoint);
-            }
             return true;
         }
 
@@ -983,7 +767,7 @@ namespace hashtopus
             string[] responze;
             try
             {
-                responze = new WebClient().DownloadString(webroot + "?a=down&token=" + token + "&type=hc" + forceUpdate + "&driver=" + curVer.ToString()).Split(separator);
+                responze = new WebClient().DownloadString(webroot + "?a=down&token=" + token + "&type=hc" + forceUpdate).Split(separator);
             }
             catch (WebException e)
             {
@@ -1533,7 +1317,7 @@ namespace hashtopus
             Console.Write("Benchmarking task for " + benchTime + "s...");
             ProcessStartInfo pinfo = new ProcessStartInfo();
             pinfo.FileName = cmdExecutable;
-            pinfo.Arguments = cmdLine + " --runtime=" + benchTime + " --separator=" + separator + " --outfile=bench" + task + ".tmp --restore-disable --potfile-disable --status-automat --session=hashtopus";
+            pinfo.Arguments = cmdLine + " --runtime=" + benchTime + " --separator=" + separator + " --outfile=bench" + task + ".tmp --restore-disable --potfile-disable --machine-readable --session=hashtopus";
 
             debugOutput(pinfo.FileName + " " + pinfo.Arguments, debug);
             
@@ -1638,7 +1422,7 @@ namespace hashtopus
             ProcessStartInfo pinfo = new ProcessStartInfo();
             pinfo.FileName = cmdExecutable;
             // construct the command line from parameters
-            pinfo.Arguments = cmdLine + " --potfile-disable --quiet --restore-disable --session=hashtopus --status --status-automat --status-timer=" + statusInterval + " --outfile-check-dir=\"" + zapDir + "\" --outfile-check-timer=" + statusInterval + " --remove --remove-timer=" + statusInterval + " --separator=" + separator + " --skip=" + chunkStart + " --limit=" + chunkSize;
+            pinfo.Arguments = cmdLine + " --potfile-disable --quiet --restore-disable --session=hashtopus --status --machine-readable --status-timer=" + statusInterval + " --outfile-check-dir=\"" + zapDir + "\" --outfile-check-timer=" + statusInterval + " --remove --remove-timer=" + statusInterval + " --separator=" + separator + " --skip=" + chunkStart + " --limit=" + chunkSize;
 
             debugOutput(pinfo.FileName + " " + pinfo.Arguments, debug);
             
@@ -1704,47 +1488,39 @@ namespace hashtopus
         public static void parseStatus(string line)
         {
             string[] items = line.Split('\t');
-            int i = 0;
-            // parse status
-            if (items[i] == "STATUS")
+            for (int i = 0; i < items.Length; i++)
             {
-                chunkStatus = items[1];
-                i += 2;
-            }
-            else
-            {
-                return;
-            }
-
-            // parse speed
-            if (items[i] == "SPEED")
-            {
-                i = 3;
-                decimal speed = 0;
-                do
+                switch (items[i])
                 {
-                    decimal keys = decimal.Parse(items[i], CultureInfo.InvariantCulture);
-                    decimal duration = decimal.Parse(items[i + 1], CultureInfo.InvariantCulture);
-                    if (duration > 0) speed += (keys / duration) * 1000;
-                    i += 2;
-                } while (items[i] != "CURKU");
-                totalSpeed = Math.Round(speed).ToString();
-            }
-            // parse checkpoint
-            if (items[i] == "CURKU")
-            {
-                chunkCurKUlast = chunkCurKU;
-                chunkCurKU = items[i + 1];
-                i += 2;
-            }
-            // parse keyspace progress
-            if (items[i] == "PROGRESS")
-            {
-                chunkRProgress = items[i + 1];
-                chunkRSize = items[i + 2];
-                i += 3;
-            }
+                    case "STATUS":
+                        chunkStatus = items[1];
+                        break;
 
+                    case "SPEED":
+                        decimal speed = 0, tester = 0;
+                        i++;
+                        do
+                        {
+                            decimal keys = decimal.Parse(items[i], CultureInfo.InvariantCulture);
+                            decimal duration = decimal.Parse(items[i + 1], CultureInfo.InvariantCulture);
+                            if (duration > 0)
+                                speed += (keys / duration) * 1000;
+                            i += 2;
+                        } while (decimal.TryParse(items[i], out tester) == true);
+                        totalSpeed = Math.Round(speed).ToString();
+                        break;
+
+                    case "CURKU":
+                        chunkCurKUlast = chunkCurKU;
+                        chunkCurKU = items[i + 1];
+                        break;
+
+                    case "PROGRESS":
+                        chunkRProgress = items[i + 1];
+                        chunkRSize = items[i + 2];
+                        break;
+                }
+            }
         }
 
         public static void outputError(string co)
