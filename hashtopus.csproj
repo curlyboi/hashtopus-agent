@@ -50,6 +50,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="hashtopus.cs" />
+    <Compile Include="htpClasses.cs" />
+    <Compile Include="ZipStorer.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="octoicon.ico" />
