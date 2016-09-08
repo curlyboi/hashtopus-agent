@@ -10,6 +10,8 @@ using System.Net;
 using System.Threading;
 using System.IO.Compression;
 using System.Globalization;
+using System.ComponentModel;
+using System.Xml;
 
 namespace hashtopus
 {
@@ -425,36 +427,36 @@ namespace hashtopus
         public static bool Read()
         {
             // read token from text file
-            if (File.Exists(filename))
+            string tok = Config.Read("token");
+            if (tok == null)
             {
-                // save it into variable
-                value = File.ReadAllText(filename);
-                return true;
+                return false;
             }
             else
             {
-                // or return false if there is none
-                return false;
+                value = tok;
+                return true;
             }
         }
 
         public static bool Write()
         {
             // write the token to disk
-            File.WriteAllText(filename, value);
+            Config.Write("token", value);
             return true;
         }
 
         public static bool Set(string newtok)
         {
+            // set new token
             value = newtok;
             return Write();
         }
 
         public static void Delete()
         {
-            if (File.Exists(filename))
-                File.Delete(filename);
+            // delete bad token
+            Config.Delete("token");
         }
     }
 
@@ -563,14 +565,13 @@ namespace hashtopus
 
     static class Htp
     {
-        public static string ver = "1.3";
+        public static string ver = "1.4";
         public static string myExe = "";
         public static string updateExe = "hashtopus-updater.exe";
         public static string logfile = "hashtopus.log";
         public static char separator = '\x01';
         public static int sleepTime = 30;
         public static string hashlistAlias = "#HL#";
-        public static bool srvRun = false; // running as a service
 
         public static int os = -1;
         public static string cpu = "";
@@ -760,29 +761,41 @@ namespace hashtopus
 
         public static bool detectUrl()
         {
-            // read my own executable and extract the path that is appended to the end of it
-            string myself = AppDomain.CurrentDomain.FriendlyName;
-            byte[] url = File.ReadAllBytes(myself);
-            long poz = url.Length - 1;
-            while (url[poz] > 0)
+            // get url from xml
+            string url = Config.Read("url");
+            if (url == null)
             {
-                poz--;
+                // its not there
+                if (HtpService.enabled)
+                {
+                    // exit when service
+                    GlobObj.OutL("No URL is defined in config.");
+                    return false;
+                }
+                // ask user when interactive
+                Console.Write("Enter server.php URL: ");
+                WebComm.root = Console.ReadLine();
+                Config.Write("url", WebComm.root);
             }
-            long delka = url.Length - poz - 1;
-            if (delka > 0)
+            else
             {
-                byte[] webrootHelper = new byte[delka];
-                Array.Copy(url, poz + 1, webrootHelper, 0, delka);
-                WebComm.root = Encoding.ASCII.GetString(webrootHelper);
+                WebComm.root = url;
             }
-            return (delka > 0);
+            // check the URL
+            string gotver = WebComm.DownloadString("a=ver");
+            if (gotver != ver)
+            {
+                GlobObj.OutL("Incorrect URL or version mismatch: " + gotver);
+                return false;
+            }
+            return true;
         }
 
         public static bool WaitForIt()
         {
             for (int i=0;i<sleepTime;i++)
             {
-                if (Hashtopus.bw.CancellationPending) return false;
+                if (HtpService.bw.CancellationPending) return false;
                 Thread.Sleep(1000);
             }
             return true;
@@ -826,7 +839,7 @@ namespace hashtopus
                 File.WriteAllBytes(updateExe, Properties.Resources.hashtopus_updater);
 
                 Process updater = new Process();
-                string arg = string.Format("\"{0}\" \"{1}\"{2}", myExe, newExe, (srvRun ? " " + Hashtopus.ServiceName : ""));
+                string arg = string.Format("\"{0}\" \"{1}\"{2}", myExe, newExe, (HtpService.enabled ? " " + Hashtopus.ServiceName : ""));
                 if (os == 1)
                 {
                     // on unix, we can overwrite ourselves
@@ -851,21 +864,23 @@ namespace hashtopus
 
         public static bool Init()
         {
-            // switch to executable directory
             Dirs.Init();
 
-            string verTag = "Hashtopus " + ver;
-            if (!srvRun)
-                Console.Title = verTag;
+            // say helo
+            string verTag = string.Format("Hashtopus {0} running in {1} mode", ver, (HtpService.enabled ? "service" : "console"));
             GlobObj.OutL(verTag);
 
+            // switch to executable directory
+            Config.Init();
+
             // inform about debug mode state
+            Debug.flag = (Config.Read("debug") == "1");
             Debug.Output("Debug mode on.", Debug.flag);
 
-            // read the executable for connector URL
+            // read url from xml or screen
             if (!detectUrl())
             {
-                GlobObj.OutL("No URL found in this executable. Please deploy agent from administration.");
+                // exit if no url was found and could not be entered (service mode)
                 return false;
             }
 
@@ -1438,7 +1453,7 @@ namespace hashtopus
     
     static class Debug
     {
-        public static bool flag = true;
+        public static bool flag = false;
         public static void Output(string toPrint, bool debugFlag, ConsoleColor printColor = ConsoleColor.Magenta)
         {
             if (debugFlag)
@@ -1754,6 +1769,7 @@ namespace hashtopus
         public static object lockLog = new object();
         public static StringBuilder crackedHashes = new StringBuilder();
         public static StringBuilder errOutput = new StringBuilder();
+        public static bool nlEnded = true;
 
         public static string fileMD5(string fileName)
         {
@@ -1766,20 +1782,27 @@ namespace hashtopus
         {
             lock (lockLog)
             {
-                if (Htp.srvRun)
+                if (HtpService.enabled)
                 {
-                    File.AppendAllText(Htp.logfile, string.Format("[{0:dd/MM/yyyy, HH:mm:ss}] {1}", DateTime.Now, co));
+                    if (nlEnded)
+                    {
+                        // only produce timestamps on new line
+                        File.AppendAllText(Htp.logfile, string.Format("[{0:dd/MM/yyyy, HH:mm:ss}] ", DateTime.Now));
+                    }
+                    File.AppendAllText(Htp.logfile, co);
                 }
                 else
                 {
                     Console.Write(co);
                 }
             }
+            nlEnded = false;
         }
 
         public static void OutL(string co = "")
         {
             Out(co + Environment.NewLine);
+            nlEnded = true;
         }
 
     }
@@ -1852,6 +1875,103 @@ namespace hashtopus
             Process[] bezi;
             bezi = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(procname));
             return (bezi.Length > 0);
+        }
+
+    }
+
+    static class HtpService
+    {
+        public static bool enabled = false;
+        public static BackgroundWorker bw = new BackgroundWorker();
+        public static AutoResetEvent rst = new AutoResetEvent(false);
+
+        public static void Start(string[] args)
+        {
+            bw.WorkerSupportsCancellation = true;
+            bw.DoWork += (sender, argz) =>
+            {
+                Htp.Run();
+            };
+
+            bw.RunWorkerCompleted += (sender, argz) =>
+            {
+                rst.Set();
+            };
+
+            bw.RunWorkerAsync();
+        }
+
+        public static void Stop()
+        {
+            bw.CancelAsync();
+        }
+
+    }
+
+    static class Config
+    {
+        public static string file = "";
+        public static XmlDocument xd = new XmlDocument();
+        public static XmlElement xr;
+
+        public static void Init()
+        {
+            file = Path.Combine(Dirs.install, "hashtopus.xml");
+            if (File.Exists(file))
+            {
+                Debug.Output("Loading existing config XML", Debug.flag);
+                xd.Load(file);
+                xr = xd.DocumentElement;
+            }
+            else
+            {
+                Debug.Output("Creating new config XML", Debug.flag);
+                xr = xd.CreateElement("Hashtopus");
+                xd.AppendChild(xr);
+            }
+            xd.Save(file);
+        }
+
+        public static void Delete(string att)
+        {
+            Debug.Output("Deleting XML element " + att, Debug.flag);
+            XmlNodeList nl = xr.GetElementsByTagName(att);
+            foreach (XmlNode xn in nl)
+            {
+                xr.RemoveChild(xn);
+            }
+            xd.Save(file);
+        }
+
+        public static void Write(string att, string val)
+        {
+            Debug.Output("Writing XML element " + att, Debug.flag);
+            XmlNodeList nl = xr.GetElementsByTagName(att);
+            if (nl.Count > 0)
+            {
+                nl[0].InnerText = val;
+            }
+            else
+            {
+                XmlElement xn = xd.CreateElement(att);
+                xn.InnerText = val;
+                xr.AppendChild(xn);
+            }
+            xd.Save(file);
+        }
+
+        public static string Read(string att)
+        {
+            Debug.Output("Reading XML element " + att, Debug.flag);
+            XmlNodeList nl = xr.GetElementsByTagName(att);
+            if (nl.Count > 0)
+            {
+                return nl[0].InnerText;
+            }
+            else
+            {
+                return null;
+            }
         }
 
     }
