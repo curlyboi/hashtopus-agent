@@ -193,9 +193,6 @@ namespace hashtopus
                             Process.Start("chmod", "+x \"" + exe + "\"");
                     }
 
-                    // auto-accept the eula
-                    AcceptEula();
-
                     break;
 
                 case "down_nok":
@@ -211,17 +208,6 @@ namespace hashtopus
             }
             return true;
 
-        }
-
-        public static void AcceptEula()
-        {
-            // simply create a file with accepted eula
-            string eulaFile = Path.Combine(dir, "eula.accepted");
-            if (!File.Exists(eulaFile))
-            {
-                GlobObj.OutL("Accepting EULA...");
-                File.WriteAllText(eulaFile, "z\x00\x00\x00");
-            }
         }
 
         public static bool Start(string cmdLine)
