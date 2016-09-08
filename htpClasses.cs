@@ -46,7 +46,7 @@ namespace hashtopus
         public static uint Load()
         {
             // load a chunk of task the agent is assigned to
-            Console.Write("Requesting chunk...");
+            GlobObj.Out("Requesting chunk...");
             string[] responze = new string[] { };
             try
             {
@@ -91,7 +91,7 @@ namespace hashtopus
                     retval = 0;
                     break;
             }
-            Console.WriteLine(consOut);
+            GlobObj.OutL(consOut);
             return retval;
         }
 
@@ -112,7 +112,7 @@ namespace hashtopus
         {
             if (Directory.Exists(dir))
             {
-                Console.WriteLine("Clearing directories...");
+                GlobObj.OutL("Clearing directories...");
                 Directory.Delete(dir, true);
             }
         }
@@ -144,7 +144,7 @@ namespace hashtopus
             {
                 case "down_ok":
                     // there is an update available
-                    Console.Write("New Hashcat version available, downloading...");
+                    GlobObj.Out("New Hashcat version available, downloading...");
 
                     // download installation archive
                     string hcarchive = Path.Combine(Dirs.install, "hashcat.zip");
@@ -154,7 +154,7 @@ namespace hashtopus
 
                     if (new FileInfo(hcarchive).Length == 0)
                     {
-                        Console.WriteLine("Downloaded empty file.");
+                        GlobObj.OutL("Downloaded empty file.");
                         File.Delete(hcarchive);
                         return false;
                     }
@@ -163,9 +163,9 @@ namespace hashtopus
                     ClearDir();
 
                     // call the extract function
-                    Console.Write("Unzipping...");
+                    GlobObj.Out("Unzipping...");
                     Zip.UnzipFile(hcarchive, Dirs.install);
-                    Console.WriteLine("OK");
+                    GlobObj.OutL("OK");
 
                     // delete the archive, it's not needed
                     File.Delete(hcarchive);
@@ -173,7 +173,7 @@ namespace hashtopus
                     // check if it worked
                     if (!Directory.Exists(dir))
                     {
-                        Console.WriteLine("Hashcat directory was not unzipped.");
+                        GlobObj.OutL("Hashcat directory was not unzipped.");
                         return false;
                     }
 
@@ -181,7 +181,7 @@ namespace hashtopus
                     if (!File.Exists(exe))
                     {
                         if (Directory.Exists(dir)) Directory.Delete(dir, true);
-                        Console.WriteLine("Executable for this platform was not delivered.");
+                        GlobObj.OutL("Executable for this platform was not delivered.");
                         return false;
                     }
                     else
@@ -198,7 +198,7 @@ namespace hashtopus
 
                 case "down_nok":
                     // server-side error
-                    Console.WriteLine("Could not download hashcat: " + responze[1]);
+                    GlobObj.OutL("Could not download hashcat: " + responze[1]);
                     return false;
 
                 case "down_na":
@@ -217,7 +217,7 @@ namespace hashtopus
             string eulaFile = Path.Combine(dir, "eula.accepted");
             if (!File.Exists(eulaFile))
             {
-                Console.WriteLine("Accepting EULA...");
+                GlobObj.OutL("Accepting EULA...");
                 File.WriteAllText(eulaFile, "z\x00\x00\x00");
             }
         }
@@ -257,11 +257,11 @@ namespace hashtopus
                 hcProcess.BeginOutputReadLine();
                 hcProcess.BeginErrorReadLine();
 
-                Console.WriteLine(string.Format("Hashcat subprocess started at {0:HH:mm:ss}", hcProcess.StartTime));
+                GlobObj.OutL(string.Format("Hashcat subprocess started at {0:HH:mm:ss}", hcProcess.StartTime));
             }
             else
             {
-                Console.WriteLine(string.Format("Hashcat subprocess didn't start at {0:HH:mm:ss}", hcProcess.StartTime));
+                GlobObj.OutL(string.Format("Hashcat subprocess didn't start at {0:HH:mm:ss}", hcProcess.StartTime));
             }
             return novy;
 
@@ -282,7 +282,7 @@ namespace hashtopus
             lastRun = Math.Round(executeSpan.TotalSeconds);
 
             // print output (including one stuffing newline)
-            Console.WriteLine(string.Format("Hashcat subprocess exited at {0:HH:mm:ss} ({1}s) with code {2}", hcProcess.StartTime, lastRun, exitCode));
+            GlobObj.OutL(string.Format("Hashcat subprocess exited at {0:HH:mm:ss} ({1}s) with code {2}", hcProcess.StartTime, lastRun, exitCode));
         }
 
         public static void outputNormal(string co)
@@ -464,7 +464,7 @@ namespace hashtopus
 
         public static bool Register()
         {
-            Console.Write("Registering to server...");
+            GlobObj.Out("Registering to server...");
             // create parameters from diagnosed values
             NameValueCollection parametry = new NameValueCollection();
             parametry.Add("uid", Htp.uid);
@@ -474,7 +474,7 @@ namespace hashtopus
             parametry.Add("os", Htp.os.ToString());
 
             // request voucher from user
-            Console.Write("Enter registration voucher: ");
+            GlobObj.Out("Enter registration voucher: ");
             string voucher = Console.ReadLine();
 
             parametry.Add("voucher", voucher);
@@ -493,15 +493,15 @@ namespace hashtopus
             {
                 case "reg_ok":
                     Token.Set(responze[1]);
-                    Console.WriteLine("OK.");
+                    GlobObj.OutL("OK.");
                     return true;
 
                 case "reg_nok":
-                    Console.WriteLine("failed: " + responze[1]);
+                    GlobObj.OutL("failed: " + responze[1]);
                     return false;
 
                 default:
-                    Console.WriteLine("Registration to server returned nonsense.");
+                    GlobObj.OutL("Registration to server returned nonsense.");
                     return false;
             }
 
@@ -517,7 +517,7 @@ namespace hashtopus
 
             if (Token.Read())
             {
-                Console.Write("Logging in to server...");
+                GlobObj.Out("Logging in to server...");
                 // login with provided token
                 string[] responze = new string[] { };
                 try
@@ -533,23 +533,23 @@ namespace hashtopus
                 switch (responze[0])
                 {
                     case "log_ok":
-                        int newSleepTime = int.Parse(responze[1]) * 1000;
+                        int newSleepTime = int.Parse(responze[1]);
                         if (newSleepTime > 0) Htp.sleepTime = newSleepTime;
-                        Console.WriteLine("OK.");
+                        GlobObj.OutL("OK.");
                         logged = true;
                         return true;
 
                     case "log_nok":
-                        Console.WriteLine("failed: " + responze[1]);
+                        GlobObj.OutL("failed: " + responze[1]);
                         return false;
 
                     case "log_unknown":
-                        Console.WriteLine("failed: " + responze[1]);
+                        GlobObj.OutL("failed: " + responze[1]);
                         Token.Delete();
                         return false;
 
                     default:
-                        Console.WriteLine("Logon to master server returned nonsense.");
+                        GlobObj.OutL("Logon to master server returned nonsense.");
                         return false;
                 }
             }
@@ -563,12 +563,14 @@ namespace hashtopus
 
     static class Htp
     {
-        public static string ver = "1.2";
-        public static string goodExe = "hashtopus.exe";
-        public static string updateExe = "hashtopupd.exe";
+        public static string ver = "1.3";
+        public static string myExe = "";
+        public static string updateExe = "hashtopus-updater.exe";
+        public static string logfile = "hashtopus.log";
         public static char separator = '\x01';
-        public static int sleepTime = 30000;
+        public static int sleepTime = 30;
         public static string hashlistAlias = "#HL#";
+        public static bool srvRun = false; // running as a service
 
         public static int os = -1;
         public static string cpu = "";
@@ -776,101 +778,215 @@ namespace hashtopus
             return (delka > 0);
         }
 
-        public static void WaitForIt()
+        public static bool WaitForIt()
         {
-            Thread.Sleep(sleepTime);
+            for (int i=0;i<sleepTime;i++)
+            {
+                if (Hashtopus.bw.CancellationPending) return false;
+                Thread.Sleep(1000);
+            }
+            return true;
         }
 
         public static bool SelfUpdate()
         {
             // self updating procedure
-            string myself = AppDomain.CurrentDomain.FriendlyName;
-            if (myself != goodExe)
+
+            // it is started regulary
+            if (File.Exists(updateExe))
             {
-                // exe name differs, treat it as update
-                Console.WriteLine("Update in progress...");
+                // delete update exe if there was any - that means update was successful
+                Threads.waitForQuit(updateExe);
+                File.Delete(updateExe);
+            }
+            // calculate hash
+            string hash = GlobObj.fileMD5(myExe);
+            byte[] responze = new byte[] { };
+            try
+            {
+                // upload it on server
+                responze = WebComm.DownloadData("a=update&hash=" + hash);
+            }
+            catch (WebException e)
+            {
+                WebComm.Error(e);
+                return true;
+            }
+            if (responze.Length >= 2 && responze[0] == 77 && responze[1] == 90)
+            {
+                GlobObj.Out("New Hashtopus version available: ");
+                // if we got something in return its the new binary
+                GlobObj.OutL("updating...");
 
-                // delete the original one and overwrite it with myself
-                Threads.waitForQuit(goodExe);
-                File.Delete(goodExe);
-                //File.WriteAllBytes(goodExe, File.ReadAllBytes(myself));
-                File.Copy(myself, goodExe);
+                // write new exe
+                string newExe = Path.GetFileNameWithoutExtension(myExe) + ".new";
+                File.WriteAllBytes(newExe, responze);
 
-                // start the original filename
+                // write updater
+                File.WriteAllBytes(updateExe, Properties.Resources.hashtopus_updater);
+
                 Process updater = new Process();
-                updater.StartInfo.WorkingDirectory = Dirs.install;
+                string arg = string.Format("\"{0}\" \"{1}\"{2}", myExe, newExe, (srvRun ? " " + Hashtopus.ServiceName : ""));
                 if (os == 1)
                 {
-                    // under linux run it as mono
+                    // on unix, we can overwrite ourselves
                     updater.StartInfo.FileName = "mono";
-                    updater.StartInfo.Arguments = goodExe;
+                    updater.StartInfo.Arguments = updateExe + " " + arg;
                 }
                 else
                 {
-                    updater.StartInfo.FileName = goodExe;
+                    // on windows, we must use transfer exe
+                    updater.StartInfo.FileName = updateExe;
+                    updater.StartInfo.Arguments = arg;
                 }
-                //updater.StartInfo.Arguments += " " + String.Join(" ", arguments);
+                updater.StartInfo.WorkingDirectory = Dirs.install;
 
+                Debug.Output(updater.StartInfo.FileName + " " + updater.StartInfo.Arguments, Debug.flag);
                 updater.Start();
-                Console.WriteLine("Update complete.");
                 return true;
-            }
-            else
-            {
-                // it is started regulary
-                if (File.Exists(updateExe))
-                {
-                    // delete update exe if there was any - that means update was successful
-                    Threads.waitForQuit(updateExe);
-                    File.Delete(updateExe);
-                }
-                // calculate hash
-                string hash = GlobObj.fileMD5(myself);
-                byte[] responze = new byte[] { };
-                try
-                {
-                    // upload it on server
-                    responze = WebComm.DownloadData("a=update&hash=" + hash);
-                }
-                catch (WebException e)
-                {
-                    WebComm.Error(e);
-                    return true;
-                }
-                if (responze.Length > 10240)
-                {
-                    Console.Write("New Hashtopus version available: ");
-                    if (responze[0] == 77 && responze[1] == 90)
-                    {
-                        // if we got something in return its the new binary
-                        Console.WriteLine("updating...");
-                        Process updater = new Process();
-                        if (os == 1)
-                        {
-                            // on unix, we can overwrite ourselves
-                            File.WriteAllBytes(myself, responze);
-                            updater.StartInfo.FileName = "mono";
-                            updater.StartInfo.Arguments = myself;
-                        }
-                        else
-                        {
-                            // on windows, we must use transfer exe
-                            File.WriteAllBytes(updateExe, responze);
-                            updater.StartInfo.FileName = updateExe;
-                        }
-                        //updater.StartInfo.Arguments += " " + String.Join(" ", arguments);
-                        updater.StartInfo.WorkingDirectory = Dirs.install;
-                        updater.Start();
-                        return true;
-                    }
-                    else
-                    {
-                        Console.WriteLine("server problem!");
-                    }
-                }
             }
             return false;
 
+        } 
+
+        public static bool Init()
+        {
+            // switch to executable directory
+            Dirs.Init();
+
+            string verTag = "Hashtopus " + ver;
+            if (!srvRun)
+                Console.Title = verTag;
+            GlobObj.OutL(verTag);
+
+            // inform about debug mode state
+            Debug.Output("Debug mode on.", Debug.flag);
+
+            // read the executable for connector URL
+            if (!detectUrl())
+            {
+                GlobObj.OutL("No URL found in this executable. Please deploy agent from administration.");
+                return false;
+            }
+
+            // find out system internal details
+            detectAll();
+
+            return true;
+        }
+
+        public static bool Cycle()
+        {
+            // wait for unfinished requests from last cycle
+            Threads.WaitForFinish();
+
+            // self update hashtopus
+            if (SelfUpdate())
+            {
+                return false;
+            }
+
+            // login to the server
+            while (!Agent.Login())
+            {
+                // on fail, register and try again
+                if (!Agent.Register())
+                    if (!WaitForIt())
+                        return false;
+
+            }
+
+            // update hashcat if needed
+            while (!Hashcat.Update())
+            {
+                // repeat if it failed
+                if (!WaitForIt())
+                    return false;
+            }
+
+            // get ourselves a job!
+            if (Task.Load())
+            {
+                uint stav = 0;
+                do
+                {
+                    // reset variables before they will be assigned
+                    Chunk.Init();
+
+                    // load chunk from server
+                    // return codes: 0=not ok, 1=ok, 2=need benchmark first, 3=need keyspace first
+                    stav = Chunk.Load();
+
+                    switch (stav)
+                    {
+                        case 3:
+                            // we are first to be assigned to this task, so we need to calculate the keyspace
+                            if (Task.calcKeyspace())
+                            {
+                                if (!Task.uploadKeyspace())
+                                {
+                                    stav = 0;
+                                }
+                            }
+                            break;
+
+                        case 2:
+                            // we are new to this task, we need to benchmark our performance
+                            if (Task.calcBenchmark())
+                            {
+                                if (!Task.uploadBenchmark())
+                                {
+                                    stav = 0;
+                                }
+                            }
+                            break;
+
+                        case 1:
+                            // everything is OK, let's crack
+                            if (Task.Start())
+                            {
+
+                                if (Chunk.rProgress == "0")
+                                {
+                                    // if there was no error, create one
+                                    string nErr = string.Format("Hashtopus: Task didn't progress, time={0}s{1}", Hashcat.lastRun, Environment.NewLine);
+                                    GlobObj.errOutput.AppendLine(nErr);
+                                    stav = 0;
+                                }
+
+                                // in case there was no status update but there were hashes or errors
+                                WebComm.uploadErrors();
+                            }
+                            else
+                            {
+                                // hashcat didn't even start
+                                stav = 0;
+                            }
+                            break;
+                    }
+                } while (stav > 0);
+            }
+            else
+            {
+                // task assign/load failed - also no need for console output
+                if (!WaitForIt())
+                    return false;
+            }
+            return true;
+        }
+
+        public static void Run()
+        {
+            // init vars
+            if (!Init())
+                return;
+
+            // repeat the main cycle indefinitely
+            while (true)
+            {
+                if (!Cycle())
+                    return;
+            }
         }
     }
 
@@ -890,9 +1006,11 @@ namespace hashtopus
         public static string files = "";
         public static string hashlists = "";
 
-        public static void SetDir()
+        public static void Init()
         {
-            install = AppDomain.CurrentDomain.BaseDirectory;
+            string loc = System.Reflection.Assembly.GetEntryAssembly().Location;
+            Htp.myExe = Path.GetFileName(loc);
+            install = Path.GetDirectoryName(loc);
             tasks = Path.Combine(install, Subdirs.tasks);
             files = Path.Combine(install, Subdirs.files);
             hashlists = Path.Combine(install, Subdirs.hashlists);
@@ -903,9 +1021,9 @@ namespace hashtopus
         {
             if (!Directory.Exists(Dirs.tasks))
             {
-                Console.Write("Creating tasks directory...");
+                GlobObj.Out("Creating tasks directory...");
                 Directory.CreateDirectory(Dirs.tasks);
-                Console.WriteLine("OK");
+                GlobObj.OutL("OK");
             }
         }
 
@@ -913,9 +1031,9 @@ namespace hashtopus
         {
             if (!Directory.Exists(Dirs.hashlists))
             {
-                Console.Write("Creating hashlists directory...");
+                GlobObj.Out("Creating hashlists directory...");
                 Directory.CreateDirectory(Dirs.hashlists);
-                Console.WriteLine("OK");
+                GlobObj.OutL("OK");
             }
         }
 
@@ -923,9 +1041,9 @@ namespace hashtopus
         {
             if (!Directory.Exists(Dirs.files))
             {
-                Console.Write("Creating files directory...");
+                GlobObj.Out("Creating files directory...");
                 Directory.CreateDirectory(Dirs.files);
-                Console.WriteLine("OK");
+                GlobObj.OutL("OK");
             }
         }
     }
@@ -947,9 +1065,9 @@ namespace hashtopus
         {
             if (!Directory.Exists(zapDir))
             {
-                Console.Write("Creating hashlist zaps directory...");
+                GlobObj.Out("Creating hashlist zaps directory...");
                 Directory.CreateDirectory(zapDir);
-                Console.WriteLine("OK");
+                GlobObj.OutL("OK");
             }
         }
 
@@ -957,9 +1075,9 @@ namespace hashtopus
         {
             if (Directory.Exists(zapDir))
             {
-                Console.Write("Clearing hashlist zaps directory...");
+                GlobObj.Out("Clearing hashlist zaps directory...");
                 Directory.Delete(zapDir, true);
-                Console.WriteLine("OK");
+                GlobObj.OutL("OK");
             }
         }
 
@@ -977,7 +1095,7 @@ namespace hashtopus
                 // download hashlist
                 try
                 {
-                    Console.Write("Downloading hashlist " + id + "...");
+                    GlobObj.Out("Downloading hashlist " + id + "...");
                     string hlUrl = string.Format("a=hashes&token={0}&hashlist={1}", Token.value, id);
                     obsah = WebComm.DownloadData(hlUrl);
                 }
@@ -994,7 +1112,7 @@ namespace hashtopus
                 string oneLine = radky.ReadLine();
                 if (oneLine == null)
                 {
-                    Console.WriteLine("hashlist is empty!");
+                    GlobObj.OutL("hashlist is empty!");
                     return false;
                 }
                 else
@@ -1003,16 +1121,16 @@ namespace hashtopus
                     switch (obsah2[0])
                     {
                         case "hashes_nok":
-                            Console.WriteLine("failed: " + obsah2[1]);
+                            GlobObj.OutL("failed: " + obsah2[1]);
                             return false;
 
                         case "hashes_na":
-                            Console.WriteLine("hashlist is fully cracked!");
+                            GlobObj.OutL("hashlist is fully cracked!");
                             return false;
 
                         default:
                             // nothing of the above = we received raw hashlist. save it to file
-                            Console.WriteLine(obsah.Length.ToString() + " bytes");
+                            GlobObj.OutL(obsah.Length.ToString() + " bytes");
                             File.WriteAllBytes(file, obsah);
                             break;
                     }
@@ -1020,7 +1138,7 @@ namespace hashtopus
             }
             else
             {
-                Console.WriteLine("Hashlist already exists.");
+                GlobObj.OutL("Hashlist already exists.");
             }
 
             return true;
@@ -1044,7 +1162,7 @@ namespace hashtopus
             {
                 Dirs.CreateTasks();
 
-                Console.Write("Loading task...");
+                GlobObj.Out("Loading task...");
                 // reset some values
                 assignmentType = 0;
                 cmdLine = "";
@@ -1070,7 +1188,7 @@ namespace hashtopus
                         // define hashlist
                         Dirs.CreateHashlists();
 
-                        Console.WriteLine("assigned to " + id + ", hashlist " + Hashlist.id + " (" + responze[5] + ")");
+                        GlobObj.OutL("assigned to " + id + ", hashlist " + Hashlist.id + " (" + responze[5] + ")");
 
                         // set internal vars for the task
                         assignmentType = int.Parse(responze[2]);
@@ -1087,7 +1205,7 @@ namespace hashtopus
                         // now check the rest of the server message
                         if (responze.Length > 7)
                         {
-                            Console.WriteLine("Task has files:");
+                            GlobObj.OutL("Task has files:");
                             // there are some files attached to this task
                             Dirs.CreateFiles();
 
@@ -1095,23 +1213,23 @@ namespace hashtopus
                             {
                                 string nam = responze[i];
                                 string fnam = Path.Combine(Dirs.files, nam);
-                                Console.Write("- " + nam + "...");
+                                GlobObj.Out("- " + nam + "...");
                                 if (!File.Exists(fnam) || new FileInfo(fnam).Length == 0)
                                 {
                                     // if the file doesn't exist, download it
-                                    Console.Write("downloading...");
+                                    GlobObj.Out("downloading...");
                                     string fileUrl = string.Format("a=file&token={0}&task={1}&file={2}", Token.value, id, nam);
                                     if (WebComm.DownloadFile(fileUrl, fnam))
                                     {
                                         if (nam.ToLower().EndsWith(".zip"))
                                         {
-                                            Console.Write("unzipping...");
+                                            GlobObj.Out("unzipping...");
                                             // unpack if it's zip archive
                                             Zip.UnzipFile(fnam, Dirs.files, false);
                                             // and save space by filling the original archive with short string
                                             File.WriteAllText(fnam, "UNPACKED");
                                         }
-                                        Console.WriteLine("OK");
+                                        GlobObj.OutL("OK");
                                     }
                                     else
                                     {
@@ -1120,7 +1238,7 @@ namespace hashtopus
                                 }
                                 else
                                 {
-                                    Console.WriteLine("already exists");
+                                    GlobObj.OutL("already exists");
                                 }
                             }
                         }
@@ -1145,11 +1263,11 @@ namespace hashtopus
                         return true;
 
                     case "task_nok":
-                        Console.WriteLine("failed: " + responze[1]);
+                        GlobObj.OutL("failed: " + responze[1]);
                         return false;
 
                     default:
-                        Console.WriteLine("Task assignment returned nonsense.");
+                        GlobObj.OutL("Task assignment returned nonsense.");
                         return false;
                 }
             }
@@ -1158,7 +1276,7 @@ namespace hashtopus
         public static bool calcKeyspace()
         {
             // server requested keyspace calculation
-            Console.WriteLine("Calculating keyspace...");
+            GlobObj.OutL("Calculating keyspace...");
 
             // run it and capture output
             Hashcat.mode = 3;
@@ -1174,13 +1292,13 @@ namespace hashtopus
                 if (!string.IsNullOrEmpty(keyspace))
                 {
                     // keyspace calculated
-                    Console.WriteLine(string.Format("Calculated keyspace size of {0}.", keyspace));
+                    GlobObj.OutL(string.Format("Calculated keyspace size of {0}.", keyspace));
                     return true;
                 }
                 else
                 {
                     // we calculated nothing
-                    Console.WriteLine("Could not calculate keyspace.");
+                    GlobObj.OutL("Could not calculate keyspace.");
                     return false;
                 }
             } else
@@ -1193,7 +1311,7 @@ namespace hashtopus
         public static bool uploadKeyspace()
         {
             // upload benchmark results to server
-            Console.Write("Uploading keyspace size...");
+            GlobObj.Out("Uploading keyspace size...");
             string[] responze = new string[] { };
             try
             {
@@ -1208,15 +1326,15 @@ namespace hashtopus
             switch (responze[0])
             {
                 case "keyspace_ok":
-                    Console.WriteLine("Accepted");
+                    GlobObj.OutL("Accepted");
                     return true;
 
                 case "keyspace_nok":
-                    Console.WriteLine("Declined: " + responze[1]);
+                    GlobObj.OutL("Declined: " + responze[1]);
                     return false;
 
                 default:
-                    Console.WriteLine("Keyspace submission returned nonsense.");
+                    GlobObj.OutL("Keyspace submission returned nonsense.");
                     return false;
             }
 
@@ -1225,7 +1343,7 @@ namespace hashtopus
         public static bool calcBenchmark()
         {
             // server requested a benchmark, just run it and upload results
-            Console.WriteLine("Benchmarking task for " + benchTime + "s...");
+            GlobObj.OutL("Benchmarking task for " + benchTime + "s...");
 
             // reset the values
             Chunk.Init();
@@ -1248,13 +1366,13 @@ namespace hashtopus
                 if (Chunk.rProgress != "0" && Chunk.rSize != "0")
                 {
                     // keyspace calculated
-                    Console.WriteLine(string.Format("Managed to scan {0}/{1} of keyspace.", Chunk.rProgress, Chunk.rSize));
+                    GlobObj.OutL(string.Format("Managed to scan {0}/{1} of keyspace.", Chunk.rProgress, Chunk.rSize));
                     return true;
                 }
                 else
                 {
                     // we calculated nothing
-                    Console.WriteLine("Could not benchmark task.");
+                    GlobObj.OutL("Could not benchmark task.");
                     return false;
                 }
             }
@@ -1268,7 +1386,7 @@ namespace hashtopus
         public static bool uploadBenchmark()
         {
             // upload benchmark results to server
-            Console.WriteLine("Uploading benchmark result...");
+            GlobObj.OutL("Uploading benchmark result...");
             string[] responze = new string[] { };
             try
             {
@@ -1283,15 +1401,15 @@ namespace hashtopus
             switch (responze[0])
             {
                 case "bench_ok":
-                    Console.WriteLine("Accepted (" + responze[1] + ")");
+                    GlobObj.OutL("Accepted (" + responze[1] + ")");
                     return true;
 
                 case "bench_nok":
-                    Console.WriteLine("Declined: " + responze[1]);
+                    GlobObj.OutL("Declined: " + responze[1]);
                     return false;
 
                 default:
-                    Console.WriteLine("Benchmark submission returned nonsense.");
+                    GlobObj.OutL("Benchmark submission returned nonsense.");
                     return false;
             }
         }
@@ -1299,7 +1417,7 @@ namespace hashtopus
         public static bool Start()
         {
             // actual start of the cracking process
-            Console.WriteLine("Starting task cracking...");
+            GlobObj.OutL("Starting task cracking...");
 
             // reset the values
             Chunk.InitProg();
@@ -1320,13 +1438,13 @@ namespace hashtopus
     
     static class Debug
     {
-        public static bool flag = false;
+        public static bool flag = true;
         public static void Output(string toPrint, bool debugFlag, ConsoleColor printColor = ConsoleColor.Magenta)
         {
             if (debugFlag)
             {
                 Console.ForegroundColor = printColor;
-                Console.WriteLine(toPrint);
+                GlobObj.OutL(toPrint);
                 Console.ResetColor();
             }
         }
@@ -1362,7 +1480,7 @@ namespace hashtopus
                     {
                         if (progres % 10 == 0)
                         {
-                            Console.Write(progres.ToString() + "% ");
+                            GlobObj.Out(progres.ToString() + "% ");
                         }
                         progresHelper = progres;
                     }
@@ -1380,7 +1498,7 @@ namespace hashtopus
                 return false;
             }
             while (wcli.IsBusy) Thread.Sleep(100);
-            Console.WriteLine();
+            GlobObj.OutL();
             return File.Exists(local);
         }
 
@@ -1428,7 +1546,7 @@ namespace hashtopus
             byte[] erej = Encoding.ASCII.GetBytes(errorsToUpload);
 
             // write data to the stream
-            Console.Write("[ERR] Uploading " + erej.Length.ToString() + " b...");
+            GlobObj.Out("[ERR] Uploading " + erej.Length.ToString() + " b...");
             Stream wrStream = wr.GetRequestStream();
             wrStream.Write(erej, 0, erej.Length);
             wrStream.Close();
@@ -1438,7 +1556,7 @@ namespace hashtopus
 
             if (wrs.StatusCode != HttpStatusCode.OK)
             {
-                Console.WriteLine("ERROR " + wrs.StatusDescription);
+                GlobObj.OutL("ERROR " + wrs.StatusDescription);
                 return;
             }
 
@@ -1465,7 +1583,7 @@ namespace hashtopus
                     consOut = string.Format("HTTP >> {0}", oneLine);
                     break;
             }
-            Console.WriteLine(consOut);
+            GlobObj.OutL(consOut);
             // let the response stream rest in peace
             radky.Close();
         }
@@ -1500,7 +1618,7 @@ namespace hashtopus
                 byte[] erej = Encoding.ASCII.GetBytes(hashesToUpload);
 
                 // print the progress
-                Console.Write(string.Format("[{0}/{1}] Uploading {2} b", Chunk.rProgress, Chunk.rSize, erej.Length));
+                GlobObj.Out(string.Format("[{0}/{1}] Uploading {2} b", Chunk.rProgress, Chunk.rSize, erej.Length));
 
                 // write data to the stream
                 StreamReader radky = null;
@@ -1509,22 +1627,22 @@ namespace hashtopus
                     Stream wrStream = wr.GetRequestStream();
                     wrStream.Write(erej, 0, erej.Length);
                     wrStream.Close();
-                    Console.Write(".");
+                    GlobObj.Out(".");
 
                     // read the response
                     HttpWebResponse wrs = (HttpWebResponse)wr.GetResponse();
-                    Console.Write(".");
+                    GlobObj.Out(".");
 
                     if (wrs.StatusCode != HttpStatusCode.OK)
                     {
-                        Console.WriteLine("ERROR " + wrs.StatusDescription);
+                        GlobObj.OutL("ERROR " + wrs.StatusDescription);
                         return;
                     }
 
                     // read the data inside the response
                     Stream wrsStream = wrs.GetResponseStream();
                     radky = new StreamReader(wrsStream);
-                    Console.Write(".");
+                    GlobObj.Out(".");
                 }
 
                 catch (WebException e)
@@ -1553,23 +1671,23 @@ namespace hashtopus
                         case "solve_ok":
                             // save how many hashes the server marked as cracked
                             solved = long.Parse(responze[1]);
-                            Console.Write("Cracked " + responze[1]);
+                            GlobObj.Out("Cracked " + responze[1]);
                             long skipped = long.Parse(responze[2]);
                             if (skipped > 0)
                             {
-                                Console.Write(", ");
-                                Console.Write("skipped " + responze[2]);
+                                GlobObj.Out(", ");
+                                GlobObj.Out("skipped " + responze[2]);
                             }
                             break;
 
                         case "solve_nok":
-                            Console.WriteLine("ERROR: " + responze[1]);
+                            GlobObj.OutL("ERROR: " + responze[1]);
                             // terminate the hashcat process to prevent wasted work
                             if (!Hashcat.hcProcess.HasExited) Hashcat.hcProcess.Kill();
                             break;
 
                         default:
-                            Console.WriteLine("HTTP >> " + oneLine);
+                            GlobObj.OutL("HTTP >> " + oneLine);
                             break;
                     }
 
@@ -1602,13 +1720,13 @@ namespace hashtopus
                             string finalFile = Path.Combine(Hashlist.zapDir, finalfn);
                             File.Move(tmpFile, finalFile);
                             // return how many zaps were written
-                            Console.Write(string.Format(", zapped {0}/{1}", zapped, responze[4]));
+                            GlobObj.Out(string.Format(", zapped {0}/{1}", zapped, responze[4]));
                         }
 
                         if (responze[3] == "stop")
                         {
                             // the hashlist was fully cracked, no need to continue working
-                            Console.Write(", hashlist cracked!");
+                            GlobObj.Out(", hashlist cracked!");
                             zapped++;
                             if (!Hashcat.hcProcess.HasExited) Hashcat.hcProcess.Kill();
                         }
@@ -1621,9 +1739,9 @@ namespace hashtopus
                 // write a star if something was done
                 if (solved + zapped > 0)
                 {
-                    Console.Write(" [*]");
+                    GlobObj.Out(" [*]");
                 }
-                Console.WriteLine();
+                GlobObj.OutL();
             }
         }
     }
@@ -1633,6 +1751,7 @@ namespace hashtopus
         public static object lockUpload = new object();
         public static object lockProgress = new object();
         public static object lockCracked = new object();
+        public static object lockLog = new object();
         public static StringBuilder crackedHashes = new StringBuilder();
         public static StringBuilder errOutput = new StringBuilder();
 
@@ -1642,6 +1761,27 @@ namespace hashtopus
             MD5 hasher = MD5.Create();
             return BitConverter.ToString(hasher.ComputeHash(File.ReadAllBytes(fileName))).Replace("-", "").ToLower();
         }
+
+        public static void Out(string co)
+        {
+            lock (lockLog)
+            {
+                if (Htp.srvRun)
+                {
+                    File.AppendAllText(Htp.logfile, string.Format("[{0:dd/MM/yyyy, HH:mm:ss}] {1}", DateTime.Now, co));
+                }
+                else
+                {
+                    Console.Write(co);
+                }
+            }
+        }
+
+        public static void OutL(string co = "")
+        {
+            Out(co + Environment.NewLine);
+        }
+
     }
 
     static class Zip
@@ -1684,7 +1824,7 @@ namespace hashtopus
                 {
                     if (!informed)
                     {
-                        Console.Write("Waiting for unfinished HTTP connections...");
+                        GlobObj.Out("Waiting for unfinished HTTP connections...");
                         informed = true;
                     }
                     Thread.Sleep(100);
@@ -1694,19 +1834,26 @@ namespace hashtopus
                     break;
                 }
             }
-            if (informed) Console.WriteLine("OK");
+            if (informed) GlobObj.OutL("OK");
         }
 
         public static void waitForQuit(string procname)
         {
-            // keep waiting 1 second until desired process exits
-            Process[] bezi;
+            // keep waiting 100 ms until desired process exits
             do
             {
                 Thread.Sleep(100);
-                bezi = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(procname));
-            } while (bezi.Length > 0);
+            } while (IsRunning(procname));
         }
+
+        public static bool IsRunning(string procname)
+        {
+            // is process running?
+            Process[] bezi;
+            bezi = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(procname));
+            return (bezi.Length > 0);
+        }
+
     }
 
 
