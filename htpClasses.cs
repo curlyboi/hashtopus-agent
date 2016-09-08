@@ -1499,12 +1499,8 @@ namespace hashtopus
                 wr.ServicePoint.Expect100Continue = false;
                 byte[] erej = Encoding.ASCII.GetBytes(hashesToUpload);
 
-                // print the progress in color if we have just hit checkpoint
-                if (Chunk.curKU != Chunk.curKUlast) Console.ForegroundColor = ConsoleColor.Cyan;
-                string progre = string.Format("[{0}/{1}]", Chunk.rProgress, Chunk.rSize);
-                Console.ResetColor();
-
-                Console.Write(string.Format("{0} Uploading {1} b", progre, erej.Length));
+                // print the progress
+                Console.Write(string.Format("[{0}/{1}] Uploading {2} b", Chunk.rProgress, Chunk.rSize, erej.Length));
 
                 // write data to the stream
                 StreamReader radky = null;
@@ -1557,16 +1553,12 @@ namespace hashtopus
                         case "solve_ok":
                             // save how many hashes the server marked as cracked
                             solved = long.Parse(responze[1]);
-                            if (solved > 0) Console.ForegroundColor = ConsoleColor.Green;
                             Console.Write("Cracked " + responze[1]);
-                            Console.ResetColor();
                             long skipped = long.Parse(responze[2]);
                             if (skipped > 0)
                             {
                                 Console.Write(", ");
-                                Console.ForegroundColor = ConsoleColor.Red;
                                 Console.Write("skipped " + responze[2]);
-                                Console.ResetColor();
                             }
                             break;
 
