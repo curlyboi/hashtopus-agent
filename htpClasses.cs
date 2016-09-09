@@ -563,8 +563,8 @@ namespace hashtopus
     {
         public static string ver = "1.5";
         public static string myExe = "";
-        public static string updateExe = "hashtopus-updater.exe";
-        public static string logfile = "hashtopus.log";
+        public static string updateExe = "";
+        public static string logfile = "";
         public static char separator = '\x01';
         public static int sleepTime = 30;
         public static string hashlistAlias = "#HL#";
@@ -778,10 +778,10 @@ namespace hashtopus
                 WebComm.root = url;
             }
             // check the URL
-            string gotver = WebComm.DownloadString("a=ver");
-            if (gotver != ver)
+            string gotver = WebComm.DownloadString("a=id");
+            if (gotver != "Hashtopus")
             {
-                GlobObj.OutL("Incorrect URL or version mismatch: " + gotver);
+                GlobObj.OutL("Hashtopus not recognized.");
                 return false;
             }
             return true;
@@ -1020,6 +1020,8 @@ namespace hashtopus
         {
             string loc = System.Reflection.Assembly.GetEntryAssembly().Location;
             Htp.myExe = Path.GetFileName(loc);
+            Htp.logfile = Path.GetFileNameWithoutExtension(Htp.myExe) + ".log";
+            Htp.updateExe = Path.GetFileNameWithoutExtension(Htp.myExe) + "-updater.exe";
             install = Path.GetDirectoryName(loc);
             tasks = Path.Combine(install, Subdirs.tasks);
             files = Path.Combine(install, Subdirs.files);
