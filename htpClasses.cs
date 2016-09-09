@@ -462,9 +462,18 @@ namespace hashtopus
             parametry.Add("os", Htp.os.ToString());
 
             // request voucher from user
-            GlobObj.Out("Enter registration voucher: ");
-            string voucher = Console.ReadLine();
-
+            string voucher = Config.Read("voucher");
+            if (voucher == null)
+            {
+                if (HtpService.enabled)
+                {
+                    GlobObj.OutL("No voucher is defined in config");
+                    return false;
+                }
+                Console.WriteLine(); ;
+                Console.WriteLine("Enter registration voucher: ");
+                voucher = Console.ReadLine();
+            }
             parametry.Add("voucher", voucher);
             string[] responze = new string[] { };
             // send them and receive the token
@@ -481,6 +490,7 @@ namespace hashtopus
             {
                 case "reg_ok":
                     Token.Set(responze[1]);
+                    Config.Delete("voucher");
                     GlobObj.OutL("OK.");
                     return true;
 
@@ -551,7 +561,7 @@ namespace hashtopus
 
     static class Htp
     {
-        public static string ver = "1.4";
+        public static string ver = "1.5";
         public static string myExe = "";
         public static string updateExe = "hashtopus-updater.exe";
         public static string logfile = "hashtopus.log";
@@ -790,7 +800,6 @@ namespace hashtopus
         public static bool SelfUpdate()
         {
             // self updating procedure
-
             // it is started regulary
             if (File.Exists(updateExe))
             {
@@ -1922,9 +1931,9 @@ namespace hashtopus
         {
             Debug.Output("Deleting XML element " + att, Debug.flag);
             XmlNodeList nl = xr.GetElementsByTagName(att);
-            foreach (XmlNode xn in nl)
+            for (int i = 0; i < nl.Count; i++)
             {
-                xr.RemoveChild(xn);
+                xr.RemoveChild(nl[i]);
             }
             xd.Save(file);
         }
