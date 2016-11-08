@@ -215,7 +215,11 @@ namespace hashtopus
             // start hashcat process
 
             //relative path optimization
-            cmdLine = cmdLine.Replace(Dirs.install, ".." + Path.DirectorySeparatorChar);
+            string replto = "..";
+            if (Dirs.install.EndsWith(Path.DirectorySeparatorChar.ToString()))
+                replto += Path.DirectorySeparatorChar;
+
+            cmdLine = cmdLine.Replace(Dirs.install, replto);
 
             ProcessStartInfo pinfo = new ProcessStartInfo();
             pinfo.FileName = exe;
