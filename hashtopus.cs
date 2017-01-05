@@ -33,7 +33,7 @@ namespace hashtopus
         
         static void Main(string[] args)
         {
-            if (Environment.UserInteractive)
+            if (Environment.UserInteractive || Environment.OSVersion.Platform == PlatformID.Unix)
             {
                 // start thread directly
                 HtpService.Start(args);
