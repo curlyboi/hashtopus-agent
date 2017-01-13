@@ -1521,19 +1521,25 @@ namespace hashtopus
         public static byte[] DownloadData(string qsa)
         {
             WebClient wcli = new WebClient();
-            return wcli.DownloadData(string.Format("{0}?{1}", root, qsa));
+            string url = string.Format("{0}?{1}", root, qsa);
+            Debug.Output(string.Format("HTTP dl-byte: {0}", url), Debug.flag);
+            return wcli.DownloadData(url);
         }
 
         public static string DownloadString(string qsa)
         {
             WebClient wcli = new WebClient();
-            return wcli.DownloadString(string.Format("{0}?{1}", root, qsa));
+            string url = string.Format("{0}?{1}", root, qsa);
+            Debug.Output(string.Format("HTTP dl-string: {0}", url), Debug.flag);
+            return wcli.DownloadString(url);
         }
 
         public static byte[] UploadValues(string qsa, NameValueCollection parametry )
         {
             WebClient wcli = new WebClient();
-            return wcli.UploadValues(string.Format("{0}?{1}", root, qsa), parametry);
+            string url = string.Format("{0}?{1}", root, qsa);
+            Debug.Output(string.Format("HTTP ul-array: {0}", url), Debug.flag);
+            return wcli.UploadValues(url, parametry);
         }
 
         public static void uploadErrors()
