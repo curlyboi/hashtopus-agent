@@ -274,7 +274,7 @@ namespace hashtopus
             lastRun = Math.Round(executeSpan.TotalSeconds);
 
             // print output (including one stuffing newline)
-            GlobObj.OutL(string.Format("Hashcat subprocess exited at {0:HH:mm:ss} ({1}s) with code {2}", hcProcess.StartTime, lastRun, exitCode));
+            GlobObj.OutL(string.Format("Hashcat subprocess exited at {0:HH:mm:ss} ({1}s) with code {2}", hcProcess.ExitTime, lastRun, exitCode));
         }
 
         public static void outputNormal(string co)
